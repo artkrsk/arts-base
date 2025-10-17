@@ -1,0 +1,22 @@
+{
+	"name": "arts/base",
+	"description": "Framework-agnostic base classes for Arts WordPress plugins",
+	"type": "library",
+	"license": "proprietary",
+	"authors": [
+		{
+			"name": "Artem Semkin",
+			"email": "me@artemsemkin.com"
+		}
+	],
+	"require": {
+		"php": ">=7.4"
+	},
+	"autoload": {
+		"psr-4": {
+			"Arts\\Base\\": "src/php/"
+		}
+	},
+	"minimum-stability": "dev",
+	"prefer-stable": true
+}
