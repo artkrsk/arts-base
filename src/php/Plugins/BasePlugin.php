@@ -6,6 +6,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly
 }
 
+/**
+ * @template TManagers of (\stdClass&\IteratorAggregate<string,object>)
+ */
 abstract class BasePlugin {
 	/**
 	 * Instances of the class.
@@ -63,7 +66,7 @@ abstract class BasePlugin {
 	 * Can be overridden by child classes to use custom container types.
 	 * Must extend \stdClass and implement IteratorAggregate for iteration.
 	 *
-	 * @var \stdClass&iterable<string, object>
+	 * @var TManagers
 	 */
 	protected $managers;
 
