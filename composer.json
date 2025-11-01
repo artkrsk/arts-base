@@ -2,7 +2,7 @@
 	"name": "arts/base",
 	"description": "Framework-agnostic base classes for Arts WordPress plugins",
 	"type": "library",
-	"license": "proprietary",
+	"license": "GPL-3.0-or-later",
 	"authors": [
 		{
 			"name": "Artem Semkin",
