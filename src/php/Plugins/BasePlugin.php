@@ -60,6 +60,9 @@ abstract class BasePlugin {
 	/**
 	 * Managers for the plugin.
 	 *
+	 * Can be overridden by child classes to use custom container types.
+	 * Must extend \stdClass and implement IteratorAggregate for iteration.
+	 *
 	 * @var \stdClass&iterable<string, object>
 	 */
 	protected $managers;
@@ -128,7 +131,7 @@ abstract class BasePlugin {
 	 * @return $this
 	 */
 	private function init_properties() {
-		$this->managers   = new \stdClass();
+		$this->init_managers_container();
 		$this->args       = array(
 			'dir_path' => $this->get_plugin_dir_path(),
 			'dir_url'  => $this->get_plugin_dir_url(),
@@ -139,6 +142,18 @@ abstract class BasePlugin {
 		$this->run_action = $this->get_default_run_action();
 
 		return $this;
+	}
+
+	/**
+	 * Initialize the managers container.
+	 *
+	 * Can be overridden by child classes to use custom container types.
+	 * The container must extend \stdClass and implement IteratorAggregate.
+	 *
+	 * @return void
+	 */
+	protected function init_managers_container() {
+		$this->managers = new \stdClass();
 	}
 
 	abstract protected function get_default_config();
