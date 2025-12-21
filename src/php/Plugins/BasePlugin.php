@@ -2,18 +2,21 @@
 
 namespace Arts\Base\Plugins;
 
+use Arts\Base\Containers\ManagersContainer;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly
 }
 
 /**
- * @template TManagers of (\stdClass&\IteratorAggregate<string,object>)
+ * @template TManagers of ManagersContainer
+ * @phpstan-consistent-constructor
  */
 abstract class BasePlugin {
 	/**
 	 * Instances of the class.
 	 *
-	 * @var array
+	 * @var array<class-string, static>
 	 */
 	private static $instances = array();
 
@@ -21,35 +24,35 @@ abstract class BasePlugin {
 	 * The URL to the AJAX handler for the plugin.
 	 * Typically this is the admin-ajax.php file which can be accessed via the admin_url() function.
 	 *
-	 * @var string
+	 * @var string|null
 	 */
 	private static $ajax_url;
 
 	/**
 	 * Common arguments for the plugin.
 	 *
-	 * @var array
+	 * @var array<string, mixed>
 	 */
 	protected $args;
 
 	/**
 	 * Options from panel for the plugin.
 	 *
-	 * @var array
+	 * @var array<string, mixed>
 	 */
 	protected $options;
 
 	/**
 	 * Configuration for the plugin.
 	 *
-	 * @var array
+	 * @var array<string, mixed>
 	 */
 	protected $config;
 
 	/**
 	 * Strings for the plugin.
 	 *
-	 * @var array
+	 * @var array<string, string>
 	 */
 	protected $strings;
 
@@ -64,7 +67,6 @@ abstract class BasePlugin {
 	 * Managers for the plugin.
 	 *
 	 * Can be overridden by child classes to use custom container types.
-	 * Must extend \stdClass and implement IteratorAggregate for iteration.
 	 *
 	 * @var TManagers
 	 */
@@ -82,7 +84,7 @@ abstract class BasePlugin {
 			self::$instances[ $cls ] = new static();
 		}
 
-		if ( ! isset( self::$ajax_url ) ) {
+		if ( self::$ajax_url === null ) {
 			self::$ajax_url = admin_url( 'admin-ajax.php' );
 		}
 
@@ -94,7 +96,7 @@ abstract class BasePlugin {
 	 *
 	 * @return void
 	 */
-	private function __construct() {
+	final protected function __construct() {
 		$this->init();
 	}
 
@@ -113,7 +115,7 @@ abstract class BasePlugin {
 	/**
 	 * Initializes the plugin by adding managers, filters, and actions.
 	 *
-	 * @return BasePlugin Returns the current instance for method chaining.
+	 * @return void
 	 */
 	protected function init() {
 		$this->init_properties();
@@ -124,14 +126,12 @@ abstract class BasePlugin {
 		$this->add_options();
 		$this->add_run_action();
 		$this->do_after_run_action();
-
-		return $this;
 	}
 
 	/**
 	 * Initialize properties of the plugin.
 	 *
-	 * @return $this
+	 * @return void
 	 */
 	private function init_properties() {
 		$this->init_managers_container();
@@ -143,30 +143,63 @@ abstract class BasePlugin {
 		$this->config     = $this->get_default_config();
 		$this->strings    = $this->get_default_strings();
 		$this->run_action = $this->get_default_run_action();
-
-		return $this;
 	}
 
 	/**
 	 * Initialize the managers container.
 	 *
 	 * Can be overridden by child classes to use custom container types.
-	 * The container must extend \stdClass and implement IteratorAggregate.
 	 *
 	 * @return void
 	 */
 	protected function init_managers_container() {
-		$this->managers = new \stdClass();
+		/** @var TManagers $managers */
+		$managers       = new ManagersContainer();
+		$this->managers = $managers;
 	}
 
+	/**
+	 * Get the default configuration.
+	 *
+	 * @return array<string, mixed>
+	 */
 	abstract protected function get_default_config();
+
+	/**
+	 * Get the default strings.
+	 *
+	 * @return array<string, string>
+	 */
 	abstract protected function get_default_strings();
+
+	/**
+	 * Get the manager classes.
+	 *
+	 * @return array<string, class-string>
+	 */
 	abstract protected function get_managers_classes();
+
+	/**
+	 * Get the default run action hook name.
+	 *
+	 * @return string
+	 */
 	abstract protected function get_default_run_action();
 
+	/**
+	 * Get the plugin directory path.
+	 *
+	 * @return string
+	 */
 	protected function get_plugin_dir_path() {
 		$reflection = new \ReflectionClass( static::class );
-		return plugin_dir_path( $reflection->getFileName() ); // Get full directory path
+		$file_name  = $reflection->getFileName();
+
+		if ( $file_name === false ) {
+			return '';
+		}
+
+		return plugin_dir_path( $file_name );
 	}
 
 	/**
@@ -179,7 +212,13 @@ abstract class BasePlugin {
 	 */
 	protected function get_plugin_dir_url() {
 		$reflection = new \ReflectionClass( static::class );
-		$dir_path   = plugin_dir_path( $reflection->getFileName() ); // Get full directory path
+		$file_name  = $reflection->getFileName();
+
+		if ( $file_name === false ) {
+			return '';
+		}
+
+		$dir_path = plugin_dir_path( $file_name );
 
 		if ( strpos( $dir_path, WP_PLUGIN_DIR ) === 0 ) {
 			// The file is inside the plugins directory
@@ -191,29 +230,84 @@ abstract class BasePlugin {
 			return get_theme_root_uri() . $relative_path;
 		}
 
-		return ''; // Fallback in case it's outside known directories
+		return '';
 	}
 
 	/**
 	 * Apply filters to plugin configuration, strings, and run action.
 	 *
-	 * @return $this
+	 * @return void
 	 */
 	protected function apply_filters() {
-		$plugin_filters_portion_name = $this->get_plugin_filters_portion_name();
+		$name = $this->get_plugin_filters_portion_name();
 
-		$this->args       = apply_filters( "{$plugin_filters_portion_name}/args", $this->args );
-		$this->config     = apply_filters( "{$plugin_filters_portion_name}/config", $this->config );
-		$this->strings    = apply_filters( "{$plugin_filters_portion_name}/strings", $this->strings );
-		$this->run_action = apply_filters( "{$plugin_filters_portion_name}/run_action", $this->run_action );
+		$args = apply_filters( "{$name}/args", $this->args );
+		if ( $this->is_string_keyed_array( $args ) ) {
+			$this->args = $args;
+		}
 
-		return $this;
+		$config = apply_filters( "{$name}/config", $this->config );
+		if ( $this->is_string_keyed_array( $config ) ) {
+			$this->config = $config;
+		}
+
+		$strings = apply_filters( "{$name}/strings", $this->strings );
+		if ( $this->is_string_array( $strings ) ) {
+			$this->strings = $strings;
+		}
+
+		$run_action = apply_filters( "{$name}/run_action", $this->run_action );
+		if ( is_string( $run_action ) ) {
+			$this->run_action = $run_action;
+		}
 	}
 
+	/**
+	 * Check if a value is an array with string keys.
+	 *
+	 * @param mixed $value The value to check.
+	 * @return bool
+	 * @phpstan-assert-if-true array<string, mixed> $value
+	 */
+	private function is_string_keyed_array( $value ) {
+		return is_array( $value );
+	}
+
+	/**
+	 * Check if a value is an array with string keys and string values.
+	 *
+	 * @param mixed $value The value to check.
+	 * @return bool
+	 * @phpstan-assert-if-true array<string, string> $value
+	 */
+	private function is_string_array( $value ) {
+		if ( ! is_array( $value ) ) {
+			return false;
+		}
+
+		foreach ( $value as $item ) {
+			if ( ! is_string( $item ) ) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * Get the run action priority.
+	 *
+	 * @return int
+	 */
 	protected function get_run_action_priority() {
 		return 10;
 	}
 
+	/**
+	 * Get the number of accepted args for run action.
+	 *
+	 * @return int
+	 */
 	protected function get_run_action_accepted_args() {
 		return 1;
 	}
@@ -221,7 +315,7 @@ abstract class BasePlugin {
 	/**
 	 * Add a WordPress action hook for the run method.
 	 *
-	 * @return $this
+	 * @return void
 	 */
 	protected function add_run_action() {
 		if ( is_string( $this->run_action ) && ! empty( $this->run_action ) ) {
@@ -230,47 +324,40 @@ abstract class BasePlugin {
 
 			add_action( $this->run_action, array( $this, 'run' ), $priority, $accepted_args );
 		}
-
-		return $this;
 	}
 
 	/**
 	 * Execute the plugin with the provided arguments.
 	 *
-	 * @return static Returns the current instance for method chaining.
+	 * @return void
 	 */
 	public function run() {
 		$this->add_filters();
 		$this->add_actions();
 		$this->do_run();
-
-		return $this;
 	}
 
 	/**
 	 * Extension point for framework-specific initialization.
 	 *
-	 * @return $this
+	 * @return void
 	 */
 	protected function do_run() {
-		return $this;
 	}
 
 	/**
 	 * Add options for the plugin.
 	 *
-	 * @return static Returns the current instance for method chaining.
+	 * @return void
 	 */
 	protected function add_options() {
 		$this->options = array();
-
-		return $this;
 	}
 
 	/**
 	 * Get the Plugin options.
 	 *
-	 * @return array $options Array of options for the Plugin
+	 * @return array<string, mixed>
 	 */
 	public function get_options() {
 		return $this->options;
@@ -279,73 +366,69 @@ abstract class BasePlugin {
 	/**
 	 * Add WordPress actions for the plugin.
 	 *
-	 * @return static Returns the current instance for method chaining.
+	 * @return void
 	 */
 	protected function add_actions() {
-		return $this;
 	}
 
 	/**
 	 * Add WordPress filters for the plugin.
 	 *
-	 * @return static Returns the current instance for method chaining.
+	 * @return void
 	 */
 	protected function add_filters() {
-		return $this;
 	}
 
+	/**
+	 * Called after managers are initialized.
+	 *
+	 * @return void
+	 */
 	protected function do_after_init_managers() {
-		return $this;
 	}
 
+	/**
+	 * Called after run action is added.
+	 *
+	 * @return void
+	 */
 	protected function do_after_run_action() {
-		return $this;
 	}
 
 	/**
 	 * Add manager instances to the managers property.
 	 *
-	 * @return static Returns the current instance for method chaining.
+	 * @return void
 	 */
 	private function add_managers() {
 		$manager_classes = $this->get_managers_classes();
 
 		if ( ! is_array( $manager_classes ) || empty( $manager_classes ) ) {
-			return $this;
+			return;
 		}
 
 		foreach ( $manager_classes as $key => $class ) {
 			$this->managers->$key = $this->get_manager_instance( $class );
 		}
-
-		return $this;
 	}
 
 	/**
 	 * Initialize all manager classes by calling their init method if it exists.
 	 *
-	 * @return static Returns the current instance for method chaining.
+	 * @return void
 	 */
 	private function init_managers() {
-		$managers = $this->managers;
-
-		if ( ! is_object( $managers ) || empty( $managers ) ) {
-			return $this;
-		}
-
-		foreach ( $managers as $manager ) {
+		foreach ( $this->managers as $manager ) {
 			if ( method_exists( $manager, 'init' ) ) {
-				$manager->init( $managers );
+				$manager->init( $this->managers );
 			}
 		}
-
-		return $this;
 	}
 
 	/**
 	 * Helper method to instantiate a manager class.
 	 *
-	 * @param string $class The manager class to instantiate.
+	 * @param class-string $class The manager class to instantiate.
 	 *
 	 * @return object The instantiated manager class.
 	 */
@@ -366,11 +449,15 @@ abstract class BasePlugin {
 	 * @return string The plugin filters portion name.
 	 */
 	protected function get_plugin_filters_portion_name() {
-		// Get the fully qualified class name of the extending class
 		$fully_qualified_class_name = static::class;
 
-		// Extract namespace from the fully qualified class name
-		$namespace = substr( $fully_qualified_class_name, 0, strrpos( $fully_qualified_class_name, '\\' ) );
+		$last_separator = strrpos( $fully_qualified_class_name, '\\' );
+
+		if ( $last_separator === false ) {
+			$namespace = '';
+		} else {
+			$namespace = substr( $fully_qualified_class_name, 0, $last_separator );
+		}
 
 		// Get the class short name using reflection
 		$class_name = ( new \ReflectionClass( static::class ) )->getShortName();

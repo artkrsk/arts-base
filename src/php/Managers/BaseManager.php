@@ -2,6 +2,8 @@
 
 namespace Arts\Base\Managers;
 
+use Arts\Base\Containers\ManagersContainer;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
@@ -17,54 +19,59 @@ abstract class BaseManager {
 	/**
 	 * Common Plugin arguments for the manager.
 	 *
-	 * @var array
+	 * @var array<string, mixed>
 	 */
 	protected $args;
 
 	/**
 	 * Configuration for the manager.
 	 *
-	 * @var array
+	 * @var array<string, mixed>
 	 */
 	protected $config;
 
 	/**
 	 * Array of text strings used by the manager.
 	 *
-	 * @var array
+	 * @var array<string, string>
 	 */
 	protected $strings;
 
 	/**
 	 * Other managers used by the current manager.
 	 *
-	 * @var \stdClass
+	 * @var ManagersContainer|null
 	 */
 	protected $managers;
 
+	/** @var string */
 	protected $plugin_dir_path;
+
+	/** @var string */
 	protected $plugin_dir_url;
+
+	/** @var string */
 	protected $plugin_ajax_url;
 
 	/**
 	 * Constructor for the BaseManager class.
 	 *
-	 * @param array $args    Common plugin arguments for the manager.
-	 * @param array $config  Configuration for the manager.
-	 * @param array $strings Array of text strings used by the manager.
+	 * @param array<string, mixed>  $args    Common plugin arguments for the manager.
+	 * @param array<string, mixed>  $config  Configuration for the manager.
+	 * @param array<string, string> $strings Array of text strings used by the manager.
 	 */
 	public function __construct( $args = array(), $config = array(), $strings = array() ) {
 		$this->args = $args;
 
-		if ( isset( $args['dir_path'] ) ) {
+		if ( isset( $args['dir_path'] ) && is_string( $args['dir_path'] ) ) {
 			$this->plugin_dir_path = $args['dir_path'];
 		}
 
-		if ( isset( $args['dir_url'] ) ) {
+		if ( isset( $args['dir_url'] ) && is_string( $args['dir_url'] ) ) {
 			$this->plugin_dir_url = $args['dir_url'];
 		}
 
-		if ( isset( $args['ajax_url'] ) ) {
+		if ( isset( $args['ajax_url'] ) && is_string( $args['ajax_url'] ) ) {
 			$this->plugin_ajax_url = $args['ajax_url'];
 		}
 
@@ -75,7 +82,8 @@ abstract class BaseManager {
 	/**
 	 * Initialize the manager with other managers.
 	 *
-	 * @param \stdClass $managers Other managers used by the current manager.
+	 * @param ManagersContainer $managers Other managers used by the current manager.
+	 * @return void
 	 */
 	public function init( $managers ) {
 		$this->init_properties();
@@ -85,11 +93,12 @@ abstract class BaseManager {
 	/**
 	 * Add other managers to the current manager.
 	 *
-	 * @param \stdClass $managers Other managers used by the current manager.
+	 * @param ManagersContainer $managers Other managers used by the current manager.
+	 * @return void
 	 */
 	protected function add_managers( $managers ) {
-		if ( ! isset( $this->managers ) ) {
-			$this->managers = new \stdClass();
+		if ( $this->managers === null ) {
+			$this->managers = new ManagersContainer();
 		}
 
 		foreach ( $managers as $key => $manager ) {
@@ -98,64 +107,49 @@ abstract class BaseManager {
 				$this->managers->$key = $manager;
 			}
 		}
-
-		return $this;
 	}
 
 	/**
 	 * Initializes properties for the manager.
 	 *
-	 * @return $this
+	 * @return void
 	 */
 	protected function init_properties() {
-		return $this;
 	}
 
 	/**
 	 * Initialize a property from the config array.
 	 *
-	 * This method checks if the specified property exists in the config array and initializes
-	 * the property with the corresponding value from the config array if it exists.
-	 *
 	 * @param string $property The name of the property to initialize.
-	 *
-	 * @return BaseManager Returns the current instance for method chaining.
+	 * @return void
 	 */
 	protected function init_property( $property ) {
 		if ( isset( $this->config[ $property ] ) ) {
 			$this->$property = $this->config[ $property ];
 		}
-
-		return $this;
 	}
 
 	/**
 	 * Initialize an array property from the config array.
 	 *
-	 * This method checks if the specified property exists in the config array, is an array,
-	 * and is not empty. If all conditions are met, it initializes the property with the
-	 * corresponding value from the config array.
-	 *
 	 * @param string $property The name of the property to initialize.
-	 *
-	 * @return BaseManager Returns the current instance for method chaining.
+	 * @return void
 	 */
 	protected function init_array_property( $property ) {
 		if ( isset( $this->config[ $property ] ) && is_array( $this->config[ $property ] ) && ! empty( $this->config[ $property ] ) ) {
 			$this->$property = $this->config[ $property ];
 		}
-
-		return $this;
 	}
 
 	/**
 	 * Gets a configuration value with caching.
 	 *
-	 * @param string $key The configuration key.
-	 * @param mixed  $default The default value.
+	 * @param non-empty-string $key The configuration key.
+	 * @param mixed            $default The default value.
 	 * @return mixed The configuration value.
 	 */
 	protected function get_config( $key, $default = null ) {
+		/** @var array<non-empty-string, mixed> $config_cache */
 		static $config_cache = array();
 
 		if ( ! isset( $config_cache[ $key ] ) ) {
