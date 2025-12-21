@@ -1,0 +1,20 @@
+# Development tool configurations
+phpstan.neon export-ignore
+phpcs.xml export-ignore
+captainhook.json export-ignore
+
+# Git and version control
+.gitignore export-ignore
+.gitattributes export-ignore
+
+# IDE and editor configs
+.claude/ export-ignore
+
+# Development documentation
+CLAUDE.md export-ignore
+
+# OS-specific files
+.DS_Store export-ignore
+
+# Composer lock file (standard for libraries)
+composer.lock export-ignore
