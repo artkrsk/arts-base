@@ -32,7 +32,7 @@ class MyPlugin extends BasePlugin {
             'my_service' => MyService::class,
         ];
     }
-    
+
     protected function get_managers_classes() {
         return [
             'my_manager' => MyManager::class,
@@ -49,10 +49,3 @@ MyPlugin::instance();
 - **Plugin** - Main plugin class with service container
 - **Service** - Business logic and functionality
 - **Manager** - WordPress integration (hooks, filters, admin)
-
-## License
-
-GPL-3.0-or-later - Compatible with WordPress
-
-This library is licensed under GPL-3.0-or-later to ensure compatibility with WordPress and GPL-licensed plugins.
-
