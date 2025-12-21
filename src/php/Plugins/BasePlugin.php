@@ -75,9 +75,9 @@ abstract class BasePlugin {
 	/**
 	 * Get the instance of this class.
 	 *
-	 * @return object The instance of this class.
+	 * @return static The instance of this class.
 	 */
-	public static function instance() {
+	public static function instance(): static {
 		$cls = static::class;
 
 		if ( ! isset( self::$instances[ $cls ] ) ) {
@@ -103,12 +103,12 @@ abstract class BasePlugin {
 	/**
 	 * Singleton should not be cloneable.
 	 */
-	private function __clone() { }
+	private function __clone(): void { }
 
 	/**
 	 * Singleton should not be restorable from strings.
 	 */
-	public function __wakeup() {
+	public function __wakeup(): void {
 		throw new \Exception( 'Cannot unserialize a singleton.' );
 	}
 
@@ -117,7 +117,7 @@ abstract class BasePlugin {
 	 *
 	 * @return void
 	 */
-	protected function init() {
+	protected function init(): void {
 		$this->init_properties();
 		$this->apply_filters();
 		$this->add_managers();
@@ -133,7 +133,7 @@ abstract class BasePlugin {
 	 *
 	 * @return void
 	 */
-	private function init_properties() {
+	private function init_properties(): void {
 		$this->init_managers_container();
 		$this->args       = array(
 			'dir_path' => $this->get_plugin_dir_path(),
@@ -152,7 +152,7 @@ abstract class BasePlugin {
 	 *
 	 * @return void
 	 */
-	protected function init_managers_container() {
+	protected function init_managers_container(): void {
 		/** @var TManagers $managers */
 		$managers       = new ManagersContainer();
 		$this->managers = $managers;
@@ -163,35 +163,35 @@ abstract class BasePlugin {
 	 *
 	 * @return array<string, mixed>
 	 */
-	abstract protected function get_default_config();
+	abstract protected function get_default_config(): array;
 
 	/**
 	 * Get the default strings.
 	 *
 	 * @return array<string, string>
 	 */
-	abstract protected function get_default_strings();
+	abstract protected function get_default_strings(): array;
 
 	/**
 	 * Get the manager classes.
 	 *
 	 * @return array<string, class-string>
 	 */
-	abstract protected function get_managers_classes();
+	abstract protected function get_managers_classes(): array;
 
 	/**
 	 * Get the default run action hook name.
 	 *
 	 * @return string
 	 */
-	abstract protected function get_default_run_action();
+	abstract protected function get_default_run_action(): string;
 
 	/**
 	 * Get the plugin directory path.
 	 *
 	 * @return string
 	 */
-	protected function get_plugin_dir_path() {
+	protected function get_plugin_dir_path(): string {
 		$reflection = new \ReflectionClass( static::class );
 		$file_name  = $reflection->getFileName();
 
@@ -210,7 +210,7 @@ abstract class BasePlugin {
 	 *
 	 * @return string URL of the plugin directory. Returns an empty string if the file is outside known directories.
 	 */
-	protected function get_plugin_dir_url() {
+	protected function get_plugin_dir_url(): string {
 		$reflection = new \ReflectionClass( static::class );
 		$file_name  = $reflection->getFileName();
 
@@ -238,7 +238,7 @@ abstract class BasePlugin {
 	 *
 	 * @return void
 	 */
-	protected function apply_filters() {
+	protected function apply_filters(): void {
 		$name = $this->get_plugin_filters_portion_name();
 
 		$args = apply_filters( "{$name}/args", $this->args );
@@ -269,7 +269,7 @@ abstract class BasePlugin {
 	 * @return bool
 	 * @phpstan-assert-if-true array<string, mixed> $value
 	 */
-	private function is_string_keyed_array( $value ) {
+	private function is_string_keyed_array( $value ): bool {
 		return is_array( $value );
 	}
 
@@ -280,7 +280,7 @@ abstract class BasePlugin {
 	 * @return bool
 	 * @phpstan-assert-if-true array<string, string> $value
 	 */
-	private function is_string_array( $value ) {
+	private function is_string_array( $value ): bool {
 		if ( ! is_array( $value ) ) {
 			return false;
 		}
@@ -299,7 +299,7 @@ abstract class BasePlugin {
 	 *
 	 * @return int
 	 */
-	protected function get_run_action_priority() {
+	protected function get_run_action_priority(): int {
 		return 10;
 	}
 
@@ -308,7 +308,7 @@ abstract class BasePlugin {
 	 *
 	 * @return int
 	 */
-	protected function get_run_action_accepted_args() {
+	protected function get_run_action_accepted_args(): int {
 		return 1;
 	}
 
@@ -317,7 +317,7 @@ abstract class BasePlugin {
 	 *
 	 * @return void
 	 */
-	protected function add_run_action() {
+	protected function add_run_action(): void {
 		if ( is_string( $this->run_action ) && ! empty( $this->run_action ) ) {
 			$priority      = $this->get_run_action_priority();
 			$accepted_args = $this->get_run_action_accepted_args();
@@ -331,7 +331,7 @@ abstract class BasePlugin {
 	 *
 	 * @return void
 	 */
-	public function run() {
+	public function run(): void {
 		$this->add_filters();
 		$this->add_actions();
 		$this->do_run();
@@ -342,7 +342,7 @@ abstract class BasePlugin {
 	 *
 	 * @return void
 	 */
-	protected function do_run() {
+	protected function do_run(): void {
 	}
 
 	/**
@@ -350,7 +350,7 @@ abstract class BasePlugin {
 	 *
 	 * @return void
 	 */
-	protected function add_options() {
+	protected function add_options(): void {
 		$this->options = array();
 	}
 
@@ -359,7 +359,7 @@ abstract class BasePlugin {
 	 *
 	 * @return array<string, mixed>
 	 */
-	public function get_options() {
+	public function get_options(): array {
 		return $this->options;
 	}
 
@@ -368,7 +368,7 @@ abstract class BasePlugin {
 	 *
 	 * @return void
 	 */
-	protected function add_actions() {
+	protected function add_actions(): void {
 	}
 
 	/**
@@ -376,7 +376,7 @@ abstract class BasePlugin {
 	 *
 	 * @return void
 	 */
-	protected function add_filters() {
+	protected function add_filters(): void {
 	}
 
 	/**
@@ -384,7 +384,7 @@ abstract class BasePlugin {
 	 *
 	 * @return void
 	 */
-	protected function do_after_init_managers() {
+	protected function do_after_init_managers(): void {
 	}
 
 	/**
@@ -392,7 +392,7 @@ abstract class BasePlugin {
 	 *
 	 * @return void
 	 */
-	protected function do_after_run_action() {
+	protected function do_after_run_action(): void {
 	}
 
 	/**
@@ -400,10 +400,10 @@ abstract class BasePlugin {
 	 *
 	 * @return void
 	 */
-	private function add_managers() {
+	private function add_managers(): void {
 		$manager_classes = $this->get_managers_classes();
 
-		if ( ! is_array( $manager_classes ) || empty( $manager_classes ) ) {
+		if ( empty( $manager_classes ) ) {
 			return;
 		}
 
@@ -417,7 +417,7 @@ abstract class BasePlugin {
 	 *
 	 * @return void
 	 */
-	private function init_managers() {
+	private function init_managers(): void {
 		foreach ( $this->managers as $manager ) {
 			if ( method_exists( $manager, 'init' ) ) {
 				$manager->init( $this->managers );
@@ -432,7 +432,7 @@ abstract class BasePlugin {
 	 *
 	 * @return object The instantiated manager class.
 	 */
-	private function get_manager_instance( $class ) {
+	private function get_manager_instance( $class ): object {
 		try {
 			$reflection = new \ReflectionClass( $class );
 			return $reflection->newInstanceArgs( array( $this->args, $this->config, $this->strings ) );
@@ -448,7 +448,7 @@ abstract class BasePlugin {
 	 *
 	 * @return string The plugin filters portion name.
 	 */
-	protected function get_plugin_filters_portion_name() {
+	protected function get_plugin_filters_portion_name(): string {
 		$fully_qualified_class_name = static::class;
 
 		$last_separator = strrpos( $fully_qualified_class_name, '\\' );

@@ -85,7 +85,7 @@ abstract class BaseManager {
 	 * @param ManagersContainer $managers Other managers used by the current manager.
 	 * @return void
 	 */
-	public function init( $managers ) {
+	public function init( $managers ): void {
 		$this->init_properties();
 		$this->add_managers( $managers );
 	}
@@ -96,7 +96,7 @@ abstract class BaseManager {
 	 * @param ManagersContainer $managers Other managers used by the current manager.
 	 * @return void
 	 */
-	protected function add_managers( $managers ) {
+	protected function add_managers( $managers ): void {
 		if ( $this->managers === null ) {
 			$this->managers = new ManagersContainer();
 		}
@@ -114,7 +114,7 @@ abstract class BaseManager {
 	 *
 	 * @return void
 	 */
-	protected function init_properties() {
+	protected function init_properties(): void {
 	}
 
 	/**
@@ -123,7 +123,7 @@ abstract class BaseManager {
 	 * @param string $property The name of the property to initialize.
 	 * @return void
 	 */
-	protected function init_property( $property ) {
+	protected function init_property( $property ): void {
 		if ( isset( $this->config[ $property ] ) ) {
 			$this->$property = $this->config[ $property ];
 		}
@@ -135,7 +135,7 @@ abstract class BaseManager {
 	 * @param string $property The name of the property to initialize.
 	 * @return void
 	 */
-	protected function init_array_property( $property ) {
+	protected function init_array_property( $property ): void {
 		if ( isset( $this->config[ $property ] ) && is_array( $this->config[ $property ] ) && ! empty( $this->config[ $property ] ) ) {
 			$this->$property = $this->config[ $property ];
 		}
@@ -148,7 +148,7 @@ abstract class BaseManager {
 	 * @param mixed            $default The default value.
 	 * @return mixed The configuration value.
 	 */
-	protected function get_config( $key, $default = null ) {
+	protected function get_config( $key, $default = null ): mixed {
 		/** @var array<non-empty-string, mixed> $config_cache */
 		static $config_cache = array();
 

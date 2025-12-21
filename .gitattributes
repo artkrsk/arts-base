@@ -15,6 +15,3 @@ CLAUDE.md export-ignore
 
 # OS-specific files
 .DS_Store export-ignore
-
-# Composer lock file (standard for libraries)
-composer.lock export-ignore
