@@ -319,10 +319,14 @@ abstract class BasePlugin {
 	 */
 	protected function add_run_action(): void {
 		if ( is_string( $this->run_action ) && ! empty( $this->run_action ) ) {
-			$priority      = $this->get_run_action_priority();
-			$accepted_args = $this->get_run_action_accepted_args();
-
-			add_action( $this->run_action, array( $this, 'run' ), $priority, $accepted_args );
+			// If the action already fired, run immediately instead of hooking
+			if ( did_action( $this->run_action ) ) {
+				$this->run();
+			} else {
+				$priority      = $this->get_run_action_priority();
+				$accepted_args = $this->get_run_action_accepted_args();
+				add_action( $this->run_action, array( $this, 'run' ), $priority, $accepted_args );
+			}
 		}
 	}
 
