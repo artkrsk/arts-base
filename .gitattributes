@@ -3,6 +3,10 @@ phpstan.neon export-ignore
 phpcs.xml export-ignore
 captainhook.json export-ignore
 
+# Dependencies (dev-only, must not ship in dist)
+vendor export-ignore
+composer.lock export-ignore
+
 # Git and version control
 .gitignore export-ignore
 .gitattributes export-ignore
