@@ -16,6 +16,7 @@ composer.lock export-ignore
 
 # Development documentation
 CLAUDE.md export-ignore
+README.md export-ignore
 
 # OS-specific files
 .DS_Store export-ignore
