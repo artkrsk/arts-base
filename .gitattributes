@@ -13,6 +13,7 @@ composer.lock export-ignore
 
 # IDE and editor configs
 .claude/ export-ignore
+.vscode/ export-ignore
 
 # Development documentation
 CLAUDE.md export-ignore
