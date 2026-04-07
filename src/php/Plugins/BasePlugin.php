@@ -221,12 +221,31 @@ abstract class BasePlugin {
 		$dir_path = plugin_dir_path( $file_name );
 
 		if ( strpos( $dir_path, WP_PLUGIN_DIR ) === 0 ) {
-			// The file is inside the plugins directory
 			$relative_path = str_replace( WP_PLUGIN_DIR, '', $dir_path );
 			return plugins_url( $relative_path );
-		} elseif ( strpos( $dir_path, get_theme_root() ) === 0 ) {
-			// The file is inside the themes directory
-			$relative_path = str_replace( get_theme_root(), '', $dir_path );
+		}
+
+		// Resolve symlinks — some hosts (e.g. Hostinger) use symlinked document roots,
+		// causing ReflectionClass::getFileName() to return a realpath that doesn't match WP_PLUGIN_DIR.
+		$real_dir_path   = wp_normalize_path( (string) realpath( dirname( $file_name ) ) ) . '/';
+		$real_plugin_dir = wp_normalize_path( (string) realpath( WP_PLUGIN_DIR ) );
+
+		if ( $real_plugin_dir && strpos( $real_dir_path, $real_plugin_dir ) === 0 ) {
+			$relative_path = substr( $real_dir_path, strlen( $real_plugin_dir ) );
+			return plugins_url( $relative_path );
+		}
+
+		$theme_root = get_theme_root();
+
+		if ( strpos( $dir_path, $theme_root ) === 0 ) {
+			$relative_path = str_replace( $theme_root, '', $dir_path );
+			return get_theme_root_uri() . $relative_path;
+		}
+
+		$real_theme_root = wp_normalize_path( (string) realpath( $theme_root ) );
+
+		if ( $real_theme_root && strpos( $real_dir_path, $real_theme_root ) === 0 ) {
+			$relative_path = substr( $real_dir_path, strlen( $real_theme_root ) );
 			return get_theme_root_uri() . $relative_path;
 		}
 
