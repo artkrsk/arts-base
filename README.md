@@ -43,13 +43,13 @@ MyPlugin::instance();
 
 ## Architecture
 
-- **BasePlugin** - Abstract singleton handling plugin lifecycle: init → apply filters → add managers → run on WordPress hook
-- **BaseManager** - Abstract base receiving `$args`, `$config`, `$strings` from plugin with access to peer managers
-- **ManagersContainer** - ArrayObject-based container enabling `$this->managers->manager_name` access
+- **BasePlugin** - Per-class singleton. Constructor bootstraps the plugin (init properties, apply filters, instantiate and init managers, register `run()`), then `run()` fires on the configured WordPress action.
+- **BaseManager** - Receives `$args`, `$config`, `$strings` from the plugin at construction; peer managers are wired in later via `init($managers)` (self excluded).
+- **ManagersContainer** - `ArrayObject` subclass supporting both iteration and property access (`$managers->some_manager`); missing keys return `null`.
 
 ## Manager Communication
 
-Managers can access each other after initialization:
+Peers are wired into `$this->managers` at the end of `BaseManager::init()`, *after* `init_properties()` runs. So `$this->managers` is `null` inside `init_properties()`, and only reachable from methods called after `init()` completes:
 
 ```php
 $this->managers->assets->enqueue_scripts();

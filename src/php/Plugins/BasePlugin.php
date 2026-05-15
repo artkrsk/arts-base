@@ -14,68 +14,66 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 abstract class BasePlugin {
 	/**
-	 * Instances of the class.
+	 * Per-class singleton storage, keyed by `static::class` so subclasses each get their own instance.
 	 *
 	 * @var array<class-string, static>
 	 */
 	private static $instances = array();
 
 	/**
-	 * The URL to the AJAX handler for the plugin.
-	 * Typically this is the admin-ajax.php file which can be accessed via the admin_url() function.
+	 * URL of `admin-ajax.php`, shared across all subclasses; lazily set on the first `instance()` call.
 	 *
 	 * @var string|null
 	 */
 	private static $ajax_url;
 
 	/**
-	 * Common arguments for the plugin.
+	 * Common arguments exposed to managers (dir_path, dir_url, ajax_url).
 	 *
 	 * @var array<string, mixed>
 	 */
 	protected $args;
 
 	/**
-	 * Options from panel for the plugin.
+	 * Plugin options. Empty by default; populated when subclasses override `add_options()`.
 	 *
 	 * @var array<string, mixed>
 	 */
 	protected $options;
 
 	/**
-	 * Configuration for the plugin.
+	 * Plugin config; filtered via `{filter_portion}/config` during `apply_filters()`.
 	 *
 	 * @var array<string, mixed>
 	 */
 	protected $config;
 
 	/**
-	 * Strings for the plugin.
+	 * Plugin strings; filtered via `{filter_portion}/strings` during `apply_filters()`.
 	 *
 	 * @var array<string, string>
 	 */
 	protected $strings;
 
 	/**
-	 * The action to run the plugin.
+	 * WordPress action on which `run()` executes; filtered via `{filter_portion}/run_action`.
 	 *
 	 * @var string
 	 */
 	protected $run_action;
 
 	/**
-	 * Managers for the plugin.
-	 *
-	 * Can be overridden by child classes to use custom container types.
+	 * Container of instantiated managers. Subclasses may narrow `TManagers` to a custom
+	 * `ManagersContainer` subclass for typed peer access.
 	 *
 	 * @var TManagers
 	 */
 	protected $managers;
 
 	/**
-	 * Get the instance of this class.
+	 * Per-class singleton accessor. Also lazily initializes the shared `$ajax_url` on first call.
 	 *
-	 * @return static The instance of this class.
+	 * @return static
 	 */
 	public static function instance(): static {
 		$cls = static::class;
@@ -92,28 +90,25 @@ abstract class BasePlugin {
 	}
 
 	/**
-	 * Constructor for the class.
-	 *
 	 * @return void
 	 */
 	final protected function __construct() {
 		$this->init();
 	}
 
-	/**
-	 * Singleton should not be cloneable.
-	 */
+	/** Singletons must not be cloneable. */
 	private function __clone(): void { }
 
-	/**
-	 * Singleton should not be restorable from strings.
-	 */
+	/** Singletons must not be restorable from a serialized payload. */
 	public function __wakeup(): void {
 		throw new \Exception( 'Cannot unserialize a singleton.' );
 	}
 
 	/**
-	 * Initializes the plugin by adding managers, filters, and actions.
+	 * Bootstrap sequence: init properties → apply config filters → add+init managers →
+	 * `do_after_init_managers` → init options → register run action → `do_after_run_action`.
+	 *
+	 * Filters and actions registered by `add_filters()` / `add_actions()` are added later, inside `run()`.
 	 *
 	 * @return void
 	 */
@@ -129,7 +124,8 @@ abstract class BasePlugin {
 	}
 
 	/**
-	 * Initialize properties of the plugin.
+	 * Initialize the managers container and seed `$args`, `$config`, `$strings`, `$run_action`
+	 * from subclass defaults.
 	 *
 	 * @return void
 	 */
@@ -146,9 +142,8 @@ abstract class BasePlugin {
 	}
 
 	/**
-	 * Initialize the managers container.
-	 *
-	 * Can be overridden by child classes to use custom container types.
+	 * Instantiate the managers container. Subclasses may override to substitute a typed
+	 * `ManagersContainer` subclass (see `@template TManagers`) for IDE/static-analysis support.
 	 *
 	 * @return void
 	 */
@@ -159,37 +154,35 @@ abstract class BasePlugin {
 	}
 
 	/**
-	 * Get the default configuration.
+	 * Default config; filterable via `{filter_portion}/config`.
 	 *
 	 * @return array<string, mixed>
 	 */
 	abstract protected function get_default_config(): array;
 
 	/**
-	 * Get the default strings.
+	 * Default strings; filterable via `{filter_portion}/strings`.
 	 *
 	 * @return array<string, string>
 	 */
 	abstract protected function get_default_strings(): array;
 
 	/**
-	 * Get the manager classes.
+	 * Map of container key → manager class-string. Instantiated in declared order during `init()`.
 	 *
 	 * @return array<string, class-string>
 	 */
 	abstract protected function get_managers_classes(): array;
 
 	/**
-	 * Get the default run action hook name.
+	 * WordPress action hook on which `run()` executes; filterable via `{filter_portion}/run_action`.
 	 *
 	 * @return string
 	 */
 	abstract protected function get_default_run_action(): string;
 
 	/**
-	 * Get the plugin directory path.
-	 *
-	 * @return string
+	 * @return string Filesystem path of the directory containing the concrete subclass file.
 	 */
 	protected function get_plugin_dir_path(): string {
 		$reflection = new \ReflectionClass( static::class );
@@ -203,12 +196,11 @@ abstract class BasePlugin {
 	}
 
 	/**
-	 * Get the URL of the plugin directory.
+	 * Resolve the public URL of the plugin/theme directory the subclass lives in.
 	 *
-	 * Constructs the URL based on whether the file is located within the `/wp-content/plugins/`
-	 * directory or the `/wp-content/themes/` directory.
+	 * Tries direct path prefixes first, then falls back to realpath comparison (see symlink note below).
 	 *
-	 * @return string URL of the plugin directory. Returns an empty string if the file is outside known directories.
+	 * @return string URL of the directory, or empty string if outside `WP_PLUGIN_DIR` and `get_theme_root()`.
 	 */
 	protected function get_plugin_dir_url(): string {
 		$reflection = new \ReflectionClass( static::class );
@@ -253,7 +245,8 @@ abstract class BasePlugin {
 	}
 
 	/**
-	 * Apply filters to plugin configuration, strings, and run action.
+	 * Run `{filter_portion}/{args,config,strings,run_action}` filters. Filtered values that fail
+	 * runtime validation are silently discarded; the property keeps its prior value.
 	 *
 	 * @return void
 	 */
@@ -282,9 +275,10 @@ abstract class BasePlugin {
 	}
 
 	/**
-	 * Check if a value is an array with string keys.
+	 * Runtime: just `is_array()`. The `@phpstan-assert-if-true` narrows the type for static
+	 * analysis under the assumption that filter callbacks return string-keyed arrays.
 	 *
-	 * @param mixed $value The value to check.
+	 * @param mixed $value
 	 * @return bool
 	 * @phpstan-assert-if-true array<string, mixed> $value
 	 */
@@ -293,9 +287,10 @@ abstract class BasePlugin {
 	}
 
 	/**
-	 * Check if a value is an array with string keys and string values.
+	 * Runtime: array whose values are all strings (keys are not inspected). The phpstan assertion
+	 * narrows callers to `array<string, string>` on a true return.
 	 *
-	 * @param mixed $value The value to check.
+	 * @param mixed $value
 	 * @return bool
 	 * @phpstan-assert-if-true array<string, string> $value
 	 */
@@ -314,7 +309,7 @@ abstract class BasePlugin {
 	}
 
 	/**
-	 * Get the run action priority.
+	 * Priority used when registering `run()` against the run action.
 	 *
 	 * @return int
 	 */
@@ -323,7 +318,7 @@ abstract class BasePlugin {
 	}
 
 	/**
-	 * Get the number of accepted args for run action.
+	 * Number of args passed from the run action hook into `run()`.
 	 *
 	 * @return int
 	 */
@@ -332,13 +327,13 @@ abstract class BasePlugin {
 	}
 
 	/**
-	 * Add a WordPress action hook for the run method.
+	 * Register `run()` on the configured action. If that action has already fired
+	 * (subclass instantiated late), invoke `run()` directly so it isn't silently skipped.
 	 *
 	 * @return void
 	 */
 	protected function add_run_action(): void {
 		if ( is_string( $this->run_action ) && ! empty( $this->run_action ) ) {
-			// If the action already fired, run immediately instead of hooking
 			if ( did_action( $this->run_action ) ) {
 				$this->run();
 			} else {
@@ -350,7 +345,7 @@ abstract class BasePlugin {
 	}
 
 	/**
-	 * Execute the plugin with the provided arguments.
+	 * Run-action callback: add filters, add actions, then invoke the `do_run()` extension point.
 	 *
 	 * @return void
 	 */
@@ -361,7 +356,7 @@ abstract class BasePlugin {
 	}
 
 	/**
-	 * Extension point for framework-specific initialization.
+	 * Extension point invoked at the end of `run()`. No-op by default.
 	 *
 	 * @return void
 	 */
@@ -369,7 +364,8 @@ abstract class BasePlugin {
 	}
 
 	/**
-	 * Add options for the plugin.
+	 * Default: reset `$this->options` to an empty array. Subclasses override to populate it
+	 * (e.g., from the database) before `run()` is scheduled.
 	 *
 	 * @return void
 	 */
@@ -378,8 +374,6 @@ abstract class BasePlugin {
 	}
 
 	/**
-	 * Get the Plugin options.
-	 *
 	 * @return array<string, mixed>
 	 */
 	public function get_options(): array {
@@ -387,7 +381,7 @@ abstract class BasePlugin {
 	}
 
 	/**
-	 * Add WordPress actions for the plugin.
+	 * Extension point: register WordPress actions. Called from `run()`. No-op by default.
 	 *
 	 * @return void
 	 */
@@ -395,7 +389,7 @@ abstract class BasePlugin {
 	}
 
 	/**
-	 * Add WordPress filters for the plugin.
+	 * Extension point: register WordPress filters. Called from `run()`. No-op by default.
 	 *
 	 * @return void
 	 */
@@ -403,7 +397,8 @@ abstract class BasePlugin {
 	}
 
 	/**
-	 * Called after managers are initialized.
+	 * Extension point invoked in `init()` after all managers have been instantiated and initialized,
+	 * before `add_options()`. No-op by default.
 	 *
 	 * @return void
 	 */
@@ -411,7 +406,7 @@ abstract class BasePlugin {
 	}
 
 	/**
-	 * Called after run action is added.
+	 * Extension point invoked as the final step of `init()`, after `add_run_action()`. No-op by default.
 	 *
 	 * @return void
 	 */
@@ -419,7 +414,8 @@ abstract class BasePlugin {
 	}
 
 	/**
-	 * Add manager instances to the managers property.
+	 * Instantiate each manager from `get_managers_classes()` and store it in the managers container
+	 * under its declared key. Pre-init: each manager only knows about itself at this point.
 	 *
 	 * @return void
 	 */
@@ -436,7 +432,8 @@ abstract class BasePlugin {
 	}
 
 	/**
-	 * Initialize all manager classes by calling their init method if it exists.
+	 * Call `init($managers)` on each registered manager, passing the full container so each one
+	 * can reach its peers. Managers without an `init()` method are skipped.
 	 *
 	 * @return void
 	 */
@@ -449,11 +446,11 @@ abstract class BasePlugin {
 	}
 
 	/**
-	 * Helper method to instantiate a manager class.
+	 * Instantiate a manager with the plugin's `$args`, `$config`, `$strings`. Falls back to the
+	 * no-arg constructor if reflection-based instantiation fails (e.g., reflection exception).
 	 *
-	 * @param class-string $class The manager class to instantiate.
-	 *
-	 * @return object The instantiated manager class.
+	 * @param class-string $class
+	 * @return object
 	 */
 	private function get_manager_instance( $class ): object {
 		try {
@@ -465,11 +462,10 @@ abstract class BasePlugin {
 	}
 
 	/**
-	 * Get the plugin filters portion name.
+	 * Build the filter-name prefix used by `apply_filters()`: namespace + class short name, lowercased,
+	 * with `\` replaced by `/`. E.g. `Arts\Base\Plugins\BasePlugin` → `arts/base/plugins/baseplugin`.
 	 *
-	 * Constructs a string based on the namespace and class name.
-	 *
-	 * @return string The plugin filters portion name.
+	 * @return string
 	 */
 	protected function get_plugin_filters_portion_name(): string {
 		$fully_qualified_class_name = static::class;
@@ -482,7 +478,6 @@ abstract class BasePlugin {
 			$namespace = substr( $fully_qualified_class_name, 0, $last_separator );
 		}
 
-		// Get the class short name using reflection
 		$class_name = ( new \ReflectionClass( static::class ) )->getShortName();
 
 		return strtolower( str_replace( '\\', '/', $namespace ) ) . '/' . strtolower( $class_name );

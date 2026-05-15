@@ -7,29 +7,24 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Container for manager instances.
- *
- * Extends ArrayObject to provide both array-like iteration and object property access.
+ * Container for manager instances. Extends `ArrayObject` so callers can both iterate
+ * (`foreach`) and reach managers via property syntax (`$container->some_manager`).
  *
  * @extends \ArrayObject<string, object>
  */
 class ManagersContainer extends \ArrayObject {
 
 	/**
-	 * Get a manager by name.
-	 *
-	 * @param string $name Manager name.
-	 * @return object|null
+	 * @param string $name
+	 * @return object|null `null` when the manager isn't registered (vs. raising a notice).
 	 */
 	public function __get( $name ) {
 		return $this->offsetExists( $name ) ? $this->offsetGet( $name ) : null;
 	}
 
 	/**
-	 * Set a manager by name.
-	 *
-	 * @param string $name Manager name.
-	 * @param object $value Manager instance.
+	 * @param string $name
+	 * @param object $value
 	 * @return void
 	 */
 	public function __set( $name, $value ) {
@@ -37,9 +32,7 @@ class ManagersContainer extends \ArrayObject {
 	}
 
 	/**
-	 * Check if a manager exists.
-	 *
-	 * @param string $name Manager name.
+	 * @param string $name
 	 * @return bool
 	 */
 	public function __isset( $name ) {
