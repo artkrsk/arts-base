@@ -51,7 +51,10 @@ abstract class BasePlugin {
 	/**
 	 * Plugin strings; filtered via `{filter_portion}/strings` during `apply_filters()`.
 	 *
-	 * @var array<string, string>
+	 * Values may nest arbitrarily deep when paired with a string lookup that traverses
+	 * dot-notation paths (see `\Arts\Store\Shared\Managers\Traits\Strings::get_string()`).
+	 *
+	 * @var array<string, mixed>
 	 */
 	protected $strings;
 
@@ -163,7 +166,11 @@ abstract class BasePlugin {
 	/**
 	 * Default strings; filterable via `{filter_portion}/strings`.
 	 *
-	 * @return array<string, string>
+	 * Returns a map of localized strings. Implementations may nest values arbitrarily
+	 * deep when paired with a string lookup that traverses dot-notation paths (see
+	 * `\Arts\Store\Shared\Managers\Traits\Strings::get_string()`).
+	 *
+	 * @return array<string, mixed>
 	 */
 	abstract protected function get_default_strings(): array;
 
