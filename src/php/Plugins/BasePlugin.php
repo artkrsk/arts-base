@@ -21,7 +21,8 @@ abstract class BasePlugin {
 	private static $instances = array();
 
 	/**
-	 * URL of `admin-ajax.php`, shared across all subclasses; lazily set on the first `instance()` call.
+	 * URL of `admin-ajax.php`, shared across all subclasses; set by the first `instance()` call, before
+	 * that plugin is constructed, so its own `$args['ajax_url']` carries it too.
 	 *
 	 * @var string|null
 	 */
@@ -74,19 +75,21 @@ abstract class BasePlugin {
 	protected $managers;
 
 	/**
-	 * Per-class singleton accessor. Also lazily initializes the shared `$ajax_url` on first call.
+	 * Per-class singleton accessor. The shared `$ajax_url` is seeded before the first plugin is
+	 * constructed: `init_properties()` copies it into `$args` during construction, so seeding it
+	 * afterwards left the first plugin, and every plugin its constructor boots, without one.
 	 *
 	 * @return static
 	 */
 	public static function instance(): static {
 		$cls = static::class;
 
-		if ( ! isset( self::$instances[ $cls ] ) ) {
-			self::$instances[ $cls ] = new static();
-		}
-
 		if ( self::$ajax_url === null ) {
 			self::$ajax_url = admin_url( 'admin-ajax.php' );
+		}
+
+		if ( ! isset( self::$instances[ $cls ] ) ) {
+			self::$instances[ $cls ] = new static();
 		}
 
 		return self::$instances[ $cls ];
