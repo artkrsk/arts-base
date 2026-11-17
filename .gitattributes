@@ -10,6 +10,7 @@ composer.lock export-ignore
 # Git and version control
 .gitignore export-ignore
 .gitattributes export-ignore
+orca.yaml export-ignore
 
 # IDE and editor configs
 .claude/ export-ignore
