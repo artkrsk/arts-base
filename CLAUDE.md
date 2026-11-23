@@ -41,6 +41,8 @@ This is a PHP library providing base classes for WordPress plugin development us
 
 - **`Containers\ManagersContainer`** - `ArrayObject` subclass supporting both iteration and property access (`$managers->some_manager`); unknown keys return `null` rather than raising a notice.
 
+- **`Elementor\CacheClear`** - Static `on_version()` / `on_change()` that clear Elementor's caches once per changed key, under the contract in artkrsk/arts-base#1. Products ship it Strauss-prefixed or unprefixed, so copies on one site share no class or static and agree only through WordPress: the `arts_elementor_cache_<key>` option and `did_action( 'elementor/core/files/clear_cache' )`. Those names, the `elementor/init` priority 20 and the claim-before-clear order are a cross-product contract; a change here must stay compatible with every copy already shipped. `arts/elementor-stubs` (dev only) is there for PHPStan; Elementor is never required at runtime.
+
 ### Plugin Lifecycle
 
 1. `Plugin::instance()` returns the per-class singleton, creating it on first call. The constructor calls `init()`.

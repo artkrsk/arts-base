@@ -8,4 +8,7 @@ parameters:
 	paths:
 		- src/php
 
+	scanFiles:
+		- vendor/arts/elementor-stubs/elementor-stubs.php
+
 	treatPhpDocTypesAsCertain: false
