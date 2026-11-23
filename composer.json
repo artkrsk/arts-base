@@ -13,6 +13,7 @@
 		"php": ">=8.0"
 	},
 	"require-dev": {
+		"arts/elementor-stubs": "^4.3",
 		"captainhook/captainhook": "^5.27",
 		"dealerdirect/phpcodesniffer-composer-installer": "^1.0",
 		"ergebnis/composer-normalize": "^2.48",

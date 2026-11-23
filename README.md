@@ -59,6 +59,19 @@ $this->managers->assets->enqueue_scripts();
 
 For IDE autocompletion, extend `ManagersContainer` and override `init_managers_container()` in your plugin. See `@template TManagers` in BasePlugin.
 
+## Elementor Cache Clear
+
+A product whose output Elementor caches (post CSS, element cache) clears those caches once after it changes, from its bootstrap or a theme's `functions.php`:
+
+```php
+use Arts\Base\Elementor\CacheClear;
+
+CacheClear::on_version( 'horizontal-scroll', MY_PLUGIN_VERSION ); // clears when the running version is higher
+CacheClear::on_change( 'trigger-cursor-follower', $state );        // clears when the value differs
+```
+
+Both only register the comparison; it runs on `elementor/init`, stores the value in the `arts_elementor_cache_<key>` option, and clears at most once per request however many products changed. The contract is in [issue #1](https://github.com/artkrsk/arts-base/issues/1).
+
 ## Used By
 
 - [Release Deploy for EDD](https://github.com/artkrsk/release-deploy-edd) - GitHub release → Easy Digital Downloads automation
