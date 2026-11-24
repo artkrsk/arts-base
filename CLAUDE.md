@@ -20,9 +20,6 @@ composer phpcs
 # Auto-fix code style issues
 composer fix
 
-# Normalize composer.json
-composer normalize
-
 # Generate PHPStan baseline
 composer phpstan:baseline
 ```
